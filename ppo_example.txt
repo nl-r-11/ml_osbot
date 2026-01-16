@@ -1,0 +1,30 @@
+# ppo_brain.py
+import json, socket
+import numpy as np
+from stable_baselines3 import PPO
+from fishing_env import FishingEnv  # your Gym env from earlier
+
+# ---- TRAIN (run once) ----
+env = FishingEnv()
+model = PPO("MlpPolicy", env, verbose=1)
+model.learn(total_timesteps=100_000)
+model.save("fishing_ppo")
+
+# ---- SERVE (inference) ----
+model = PPO.load("fishing_ppo")
+
+HOST, PORT = "127.0.0.1", 5555
+sock = socket.socket()
+sock.bind((HOST, PORT))
+sock.listen(1)
+
+conn, _ = sock.accept()
+while True:
+    data = conn.recv(4096)
+    if not data:
+        break
+    state = json.loads(data.decode())
+    # state expected normalized floats, e.g. [0/1, 0/1, 0/1, 0/1]
+    obs = np.array(state, dtype=np.float32)
+    action, _ = model.predict(obs, deterministic=True)
+    conn.send(json.dumps(int(action)).encode())

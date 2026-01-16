@@ -1,0 +1,61 @@
+local ipc python java osbot fishing ml
+
+1. osbot
+2. python openai gynasnium and 
+3. stable baselines3 ppo 
+
+Tech stack (clean, minimal)
+	Game interface (Java)
+	OSBot script
+	Role: read true game state, execute actions, control timing
+	Decision / learning (Python)
+	Stable Baselines3 (PPO)
+	Gymnasium wrapper (custom env)
+	Role: choose actions from state
+	Glue (local IPC)
+	Localhost TCP / HTTP (JSON messages)
+	Role: Java ⇄ Python communication
+
+Core process (end-to-end)
+
+	Define the abstraction
+	State vector (numbers/booleans only):
+	hp, food_count, is_animating, at_bank, dist_to_target, enemy_hp
+	Action space (macros):
+	MOVE_BANK, ATTACK, EAT, IDLE
+	Build the Gym environment (Python)
+	Gym is fake + parameterized, not OSRS itself
+	Simulates transitions + rewards
+	Train PPO fast and safely (no bans, resettable)
+	Train PPO
+	Reward examples:
+	+damage, +kills, −death, −idle_time
+	PPO learns a policy: state → action
+
+Live execution (real OSRS)
+
+	OSBot onLoop():
+	Read state via OSBot API
+	Send JSON → Python
+	Receive action ID
+	Execute macro via OSBot
+	PPO does no clicking, only decisions
+	Optional: freeze learning or do tiny online updates
+
+
+What you’d build first (order)
+
+	OSBot script that only reports state + executes hardcoded 	actions
+	Local IPC JSON round-trip
+	Gym env that mirrors that state/action space
+	PPO training on a single task (e.g., attack + eat)
+	Plug trained PPO into live OSBot loop
+	
+
+
+
+step 1 before starting any bot like this
+	1. define state
+	2. define actions
+	3. gym environment
+	4. design rules

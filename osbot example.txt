@@ -1,0 +1,70 @@
+import org.osbot.rs07.script.Script;
+import org.osbot.rs07.script.ScriptManifest;
+
+import java.io.*;
+import java.net.Socket;
+
+@ScriptManifest(name="FishingRL", author="you", version=1.0, info="", logo="")
+public class FishingRL extends Script {
+
+    private Socket socket;
+    private BufferedReader in;
+    private BufferedWriter out;
+
+    @Override
+    public void onStart() throws IOException {
+        socket = new Socket("127.0.0.1", 5555);
+        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+    }
+
+    @Override
+    public int onLoop() throws IOException {
+        // ---- READ STATE (booleans only) ----
+        int inventoryFull = getInventory().isFull() ? 1 : 0;
+        int isAnimating = myPlayer().isAnimating() ? 1 : 0;
+        int atFish = getMap().canReach(/* fishing tile */) ? 1 : 0;
+        int atBank = getBank().isOpen() || /* area.contains(player) */ false ? 1 : 0;
+
+        // normalize to [0,1] floats
+        String stateJson = "[" +
+                inventoryFull + "," +
+                isAnimating + "," +
+                atFish + "," +
+                atBank + "]";
+
+        // ---- SEND STATE ----
+        out.write(stateJson);
+        out.flush();
+
+        // ---- RECEIVE ACTION ----
+        int action = Integer.parseInt(in.readLine());
+
+        // ---- EXECUTE MACRO ----
+        switch (action) {
+            case 0: // FISH
+                if (!myPlayer().isAnimating()) {
+                    /* click fishing spot */
+                }
+                break;
+            case 1: // WALK_TO_BANK
+                /* webWalk(bankArea) */
+                break;
+            case 2: // DEPOSIT
+                if (getBank().open()) getBank().depositAll();
+                break;
+            case 3: // WALK_TO_FISH
+                /* webWalk(fishingArea) */
+                break;
+            case 4: // IDLE
+                break;
+        }
+
+        return 300; // ms
+    }
+
+    @Override
+    public void onExit() throws IOException {
+        socket.close();
+    }
+}
